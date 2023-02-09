@@ -1,0 +1,2 @@
+Inspecting: vecAdd(double*,double*,double*,int);num_static_instrs: 24;maxregs: 12(12)
+:::NVBit-inject-error; ERROR FAIL Detected Singal SIGKILL; injNumActivations: 0:::

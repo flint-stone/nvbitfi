@@ -1,0 +1,211 @@
+rm -f *.so *.o
+nvcc -ccbin=`which gcc` -D_FORCE_INLINES -I../../../core -I../common -maxrregcount=16 -Xptxas -astoolspatch --keep-device-functions -arch=sm_35 -DDUMMY=0 -Xcompiler -Wall -Xcompiler -fPIC -c inject_funcs.cu -o inject_funcs.o
+nvcc -ccbin=`which gcc` -D_FORCE_INLINES -dc -c -std=c++11 -I../../../core -I../common -Xptxas -cloning=no -Xcompiler -Wall -arch=sm_35 -O3 -Xcompiler -fPIC pf_injector.cu -o pf_injector.o
+nvcc -ccbin=`which gcc` -D_FORCE_INLINES -arch=sm_35 -O3 inject_funcs.o pf_injector.o -L../../../core -lnvbit -L/usr/local/cuda/lib64 -lcuda -lcudart_static -shared -o pf_injector.so
+------------- NVBit (NVidia Binary Instrumentation Tool v1.5.5) Loaded --------------
+NVBit core environment variables (mostly for nvbit-devs):
+            NVDISASM = nvdisasm - override default nvdisasm found in PATH
+            NOBANNER = 0 - if set, does not print this banner
+---------------------------------------------------------------------------------
+InstructionType: FADD id 0
+InstructionType: FADD32I id 1
+InstructionType: FCHK id 2
+InstructionType: FCMP id 3
+InstructionType: FFMA id 4
+InstructionType: FFMA32I id 5
+InstructionType: FMNMX id 6
+InstructionType: FMUL id 7
+InstructionType: FMUL32I id 8
+InstructionType: FSEL id 9
+InstructionType: FSET id 10
+InstructionType: FSETP id 11
+InstructionType: FSWZADD id 12
+InstructionType: IPA id 13
+InstructionType: MUFU id 14
+InstructionType: RRO id 15
+InstructionType: DADD id 16
+InstructionType: DFMA id 17
+InstructionType: DMNMX id 18
+InstructionType: DMUL id 19
+InstructionType: DSET id 20
+InstructionType: DSETP id 21
+InstructionType: HADD2 id 22
+InstructionType: HADD2_32I id 23
+InstructionType: HFMA2 id 24
+InstructionType: HFMA2_32I id 25
+InstructionType: HMUL2 id 26
+InstructionType: HMUL2_32I id 27
+InstructionType: HSET2 id 28
+InstructionType: HSETP2 id 29
+InstructionType: IDP id 30
+InstructionType: IDP4A id 31
+InstructionType: BFE id 32
+InstructionType: BFI id 33
+InstructionType: BMSK id 34
+InstructionType: BREV id 35
+InstructionType: FLO id 36
+InstructionType: IADD id 37
+InstructionType: IADD3 id 38
+InstructionType: IADD32I id 39
+InstructionType: ICMP id 40
+InstructionType: IMAD id 41
+InstructionType: IMAD32I id 42
+InstructionType: IMADSP id 43
+InstructionType: IMNMX id 44
+InstructionType: IMUL id 45
+InstructionType: IMUL32I id 46
+InstructionType: ISCADD id 47
+InstructionType: ISCADD32I id 48
+InstructionType: ISET id 49
+InstructionType: ISETP id 50
+InstructionType: LEA id 51
+InstructionType: LOP id 52
+InstructionType: LOP3 id 53
+InstructionType: LOP32I id 54
+InstructionType: PLOP3 id 55
+InstructionType: POPC id 56
+InstructionType: SHF id 57
+InstructionType: SHL id 58
+InstructionType: SHR id 59
+InstructionType: XMAD id 60
+InstructionType: IMMA id 61
+InstructionType: HMMA id 62
+InstructionType: VABSDIFF id 63
+InstructionType: VADD id 64
+InstructionType: VMAD id 65
+InstructionType: VMNMX id 66
+InstructionType: VSET id 67
+InstructionType: VSETP id 68
+InstructionType: VSHL id 69
+InstructionType: VSHR id 70
+InstructionType: VABSDIFF4 id 71
+InstructionType: F2F id 72
+InstructionType: F2I id 73
+InstructionType: I2F id 74
+InstructionType: I2I id 75
+InstructionType: I2IP id 76
+InstructionType: FRND id 77
+InstructionType: MOV id 78
+InstructionType: MOV32I id 79
+InstructionType: PRMT id 80
+InstructionType: SEL id 81
+InstructionType: SGXT id 82
+InstructionType: SHFL id 83
+InstructionType: CSET id 84
+InstructionType: CSETP id 85
+InstructionType: PSET id 86
+InstructionType: PSETP id 87
+InstructionType: P2R id 88
+InstructionType: R2P id 89
+InstructionType: TEX id 90
+InstructionType: TLD id 91
+InstructionType: TLD4 id 92
+InstructionType: TMML id 93
+InstructionType: TXA id 94
+InstructionType: TXD id 95
+InstructionType: TXQ id 96
+InstructionType: TEXS id 97
+InstructionType: TLD4S id 98
+InstructionType: TLDS id 99
+InstructionType: STP id 100
+InstructionType: LD id 101
+InstructionType: LDC id 102
+InstructionType: LDG id 103
+InstructionType: LDL id 104
+InstructionType: LDS id 105
+InstructionType: ST id 106
+InstructionType: STG id 107
+InstructionType: STL id 108
+InstructionType: STS id 109
+InstructionType: MATCH id 110
+InstructionType: QSPC id 111
+InstructionType: ATOM id 112
+InstructionType: ATOMS id 113
+InstructionType: RED id 114
+InstructionType: CCTL id 115
+InstructionType: CCTLL id 116
+InstructionType: ERRBAR id 117
+InstructionType: MEMBAR id 118
+InstructionType: CCTLT id 119
+InstructionType: SUATOM id 120
+InstructionType: SULD id 121
+InstructionType: SURED id 122
+InstructionType: SUST id 123
+InstructionType: BRA id 124
+InstructionType: BRX id 125
+InstructionType: JMP id 126
+InstructionType: JMX id 127
+InstructionType: SSY id 128
+InstructionType: SYNC id 129
+InstructionType: CAL id 130
+InstructionType: JCAL id 131
+InstructionType: PRET id 132
+InstructionType: RET id 133
+InstructionType: BRK id 134
+InstructionType: PBK id 135
+InstructionType: CONT id 136
+InstructionType: PCNT id 137
+InstructionType: EXIT id 138
+InstructionType: PEXIT id 139
+InstructionType: LONGJMP id 140
+InstructionType: PLONGJMP id 141
+InstructionType: KIL id 142
+InstructionType: BSSY id 143
+InstructionType: BSYNC id 144
+InstructionType: BREAK id 145
+InstructionType: BMOV id 146
+InstructionType: BPT id 147
+InstructionType: IDE id 148
+InstructionType: RAM id 149
+InstructionType: RTT id 150
+InstructionType: SAM id 151
+InstructionType: RPCMOV id 152
+InstructionType: WARPSYNC id 153
+InstructionType: YIELD id 154
+InstructionType: NANOSLEEP id 155
+InstructionType: NOP id 156
+InstructionType: CS2R id 157
+InstructionType: S2R id 158
+InstructionType: LEPC id 159
+InstructionType: B2R id 160
+InstructionType: BAR id 161
+InstructionType: R2B id 162
+InstructionType: VOTE id 163
+InstructionType: DEPBAR id 164
+InstructionType: GETCRSPTR id 165
+InstructionType: GETLMEMBASE id 166
+InstructionType: SETCRSPTR id 167
+InstructionType: SETLMEMBASE id 168
+InstructionType: PMTRIG id 169
+InstructionType: SETCTAID id 170
+nvbit_at_init:end
+InstType=103, SMID=0, LaneID=0, Mask=1
+extracted instType: MOV, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 78
+extracted instType: SHFL, isLoad 0 isStore 1 getMemOpBytes 4 index of instType: 83
+extracted instType: S2R, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 158
+extracted instType: S2R, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 158
+extracted instType: IMAD, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 41
+extracted instType: ISETP, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 50
+extracted instType: EXIT, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 138
+extracted instType: MOV, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 78
+extracted instType: IMAD, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 41
+extracted instType: IMAD, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 41
+extracted instType: LDG, isLoad 1 isStore 0 getMemOpBytes 8 index of instType: 103
+instruction selected for instrumentation: Instr 10 @ 0xa0 (160) - LDG.E.64.SYS R4, [R4] ;
+num tokens = 4 
+extracted instType: LDG, isLoad 1 isStore 0 getMemOpBytes 8 index of instType: 103
+instruction selected for instrumentation: Instr 11 @ 0xb0 (176) - LDG.E.64.SYS R2, [R2] ;
+num tokens = 4 
+extracted instType: IMAD, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 41
+extracted instType: DADD, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 16
+extracted instType: STG, isLoad 0 isStore 1 getMemOpBytes 8 index of instType: 107
+extracted instType: EXIT, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 138
+extracted instType: BRA, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 124
+extracted instType: NOP, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 156
+extracted instType: NOP, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 156
+extracted instType: NOP, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 156
+extracted instType: NOP, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 156
+extracted instType: NOP, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 156
+extracted instType: NOP, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 156
+extracted instType: NOP, isLoad 0 isStore 0 getMemOpBytes 4 index of instType: 156
+is_exit
