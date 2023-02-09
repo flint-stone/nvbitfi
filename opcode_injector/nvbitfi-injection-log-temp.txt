@@ -1,2 +1,0 @@
-Inspecting: vecAdd(double*,double*,double*,int);num_static_instrs: 24;maxregs: 12(12)
-Injection data; index: 0;kernel_name: vecAdd(double*,double*,double*,int);ctas: 98;selected SM: 0;selected Lane: 0;selected Mask: 1;selected InstType: 103;injNumActivations: 128
