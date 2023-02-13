@@ -1,9 +1,51 @@
 #include <stdio.h> 
 #include <stdint.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
 
 #include "repeat.h"
 
 typedef unsigned long long int ptrsize_type;
+
+////////////////////////////////////////////////////////////////////////////////
+// These are CUDA Helper functions
+
+// add a level of protection to the CUDA SDK samples, let's force samples to
+// explicitly include CUDA.H
+
+// This will output the proper CUDA error strings in the event that a CUDA host
+// call returns an error
+
+// These are the inline versions for all of the SDK helper functions
+
+static const char *_cudaGetErrorEnum(cudaError_t error) {
+  return cudaGetErrorName(error);
+}
+
+template <typename T>
+void check(T result, char const *const func, const char *const file,
+           int const line) {
+  if (result) {
+    fprintf(stderr, "CUDA error at %s:%d code=%d(%s) \"%s\" \n", file, line,
+            static_cast<unsigned int>(result), _cudaGetErrorEnum(result), func);
+    exit(EXIT_FAILURE);
+  }
+}
+
+
+#define checkCudaErrors(val) check((val), #val, __FILE__, __LINE__)
+
+// inline void checkCudaErrors(CUresult err) {
+//   if (0 != err) {
+//     const char *errorStr = NULL;
+//     cuGetErrorString(err, &errorStr);
+//     printf(stderr,
+//             "checkCudaErrors() Driver API error = %04d \"%s\" from file <%s>, "
+//             "line %i.\n",
+//             err, errorStr, __FILE__, __LINE__);
+//   }
+// }
+
 
 __global__ void global_latency (ptrsize_type** my_array, int array_length, int iterations, unsigned long long * duration) {
 
@@ -30,16 +72,27 @@ __global__ void global_latency (ptrsize_type** my_array, int array_length, int i
 
 void parametric_measure_global(int N, int iterations, unsigned long long int maxMem, int stride)
 {
+    cudaDeviceProp prop[64];
+    checkCudaErrors(cudaGetDeviceProperties(&prop[0], 0));
+    checkCudaErrors(cudaGetDeviceProperties(&prop[1], 1));
+    int p2pCapableGPUs[2]; 
+    p2pCapableGPUs[0] = 0;
+    p2pCapableGPUs[1] = 1;
+    //printf("Enabling peer access...\n");
+    checkCudaErrors(cudaSetDevice(p2pCapableGPUs[0]));
+    checkCudaErrors(cudaDeviceEnablePeerAccess(p2pCapableGPUs[1], 0));
+    checkCudaErrors(cudaSetDevice(p2pCapableGPUs[1]));
+    checkCudaErrors(cudaDeviceEnablePeerAccess(p2pCapableGPUs[0], 0));
+
+
     unsigned long long int maxMemToArraySize = maxMem / sizeof( ptrsize_type );
     unsigned long long int maxArraySizeNeeded = 1024*iterations*stride;
     unsigned long long int maxArraySize = (maxMemToArraySize<maxArraySizeNeeded)?(maxMemToArraySize):(maxArraySizeNeeded);
 
     ptrsize_type* h_a = new ptrsize_type[maxArraySize+2];
     ptrsize_type** d_a;
-    cudaMalloc ((void **) &d_a, (maxArraySize+2)*sizeof(ptrsize_type));
-
-    unsigned long long int* duration;
-    cudaMalloc ((void **) &duration, sizeof(unsigned long long int));
+    checkCudaErrors(cudaSetDevice(p2pCapableGPUs[1]));
+    checkCudaErrors(cudaMalloc((void **) &d_a, (maxArraySize+2)*sizeof(ptrsize_type)));
 
     for ( int i = 0; true; i += stride)
     {
@@ -57,9 +110,12 @@ void parametric_measure_global(int N, int iterations, unsigned long long int max
     }
     cudaMemcpy((void *)d_a, h_a, (maxArraySize+2)*sizeof(ptrsize_type), cudaMemcpyHostToDevice);
 
+    checkCudaErrors(cudaSetDevice(p2pCapableGPUs[0]));
+    unsigned long long int* duration;
+    cudaMalloc ((void **) &duration, sizeof(unsigned long long int));
+
     unsigned long long int latency_sum = 0;
     int repeat = 1;
-    unsigned long long int latency_collection[repeat];
     for (int l=0; l <repeat; l++)
     {
         global_latency<<<1,1>>>(d_a, maxArraySize, iterations, duration);
@@ -74,19 +130,18 @@ void parametric_measure_global(int N, int iterations, unsigned long long int max
         unsigned long long int latency;
         cudaMemcpy( &latency, duration, sizeof(unsigned long long int), cudaMemcpyDeviceToHost);
         latency_sum += latency;
-        latency_collection[l] = latency;
     }
 
     cudaFree(d_a);
     cudaFree(duration);
 
     delete[] h_a;
+    //printf("Disabling peer access...\n");
+    checkCudaErrors(cudaSetDevice(p2pCapableGPUs[0]));
+    checkCudaErrors(cudaDeviceDisablePeerAccess(p2pCapableGPUs[1]));
+    checkCudaErrors(cudaSetDevice(p2pCapableGPUs[1]));
+    checkCudaErrors(cudaDeviceDisablePeerAccess(p2pCapableGPUs[0]));
     printf("latency average %f\n", (double)(latency_sum/(repeat*1024.0*iterations)) );
-    // printf("latecny collection: [");
-    // for(int i = 0; i < repeat; i ++){
-    //     printf("%llu, ", latency_collection[i]);
-    // }
-    // printf("]\n");
 }
 
 void measure_global_latency()

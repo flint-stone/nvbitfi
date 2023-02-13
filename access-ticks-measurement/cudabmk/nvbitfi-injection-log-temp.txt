@@ -1,0 +1,2 @@
+Inspecting: global_latency(unsignedlonglong**,int,int,unsignedlonglong*);num_static_instrs: 1056;maxregs: 24(24)
+Injection data; index: 0;kernel_name: global_latency(unsignedlonglong**,int,int,unsignedlonglong*);ctas: 1;selected SM: 0;selected Lane: 0;selected Mask: 1;selected InstType: 103;injNumActivations: 0
