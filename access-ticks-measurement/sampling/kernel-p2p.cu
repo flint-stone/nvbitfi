@@ -87,10 +87,10 @@ int main(int argc, char **argv){
     int len, size;
     unsigned int count;
     size_t grid_size, workgroup_size;
-    bool use_std = true;
+    bool use_std = false;
 
-    if (argc != 5) {
-        printf("./kernel memory_size num_wg count\n");
+    if (argc != 6) {
+        printf("./kernel-p2p memory_size num_wg count\n");
         exit(-1);
     }
 
@@ -98,6 +98,7 @@ int main(int argc, char **argv){
     count = atoi(argv[3]);
     int num_wg = atoi(argv[2]);
     int gpuID = atoi(argv[4]);
+    int peerGpuID = atoi(argv[5]);
     int num_wi_per_wg = 32;
 
     grid_size = num_wg * num_wi_per_wg;
@@ -108,11 +109,11 @@ int main(int argc, char **argv){
 
     /*P2P*/
     cudaDeviceProp prop[64];
-    checkCudaErrors(cudaGetDeviceProperties(&prop[0], 0));
-    checkCudaErrors(cudaGetDeviceProperties(&prop[1], 1));
+    checkCudaErrors(cudaGetDeviceProperties(&prop[0], gpuID));
+    checkCudaErrors(cudaGetDeviceProperties(&prop[1], peerGpuID));
     int p2pCapableGPUs[2]; 
-    p2pCapableGPUs[0] = 0;
-    p2pCapableGPUs[1] = 1;
+    p2pCapableGPUs[0] = gpuID;
+    p2pCapableGPUs[1] = peerGpuID;
     checkCudaErrors(cudaSetDevice(p2pCapableGPUs[0]));
     checkCudaErrors(cudaDeviceEnablePeerAccess(p2pCapableGPUs[1], 0));
     checkCudaErrors(cudaSetDevice(p2pCapableGPUs[1]));
