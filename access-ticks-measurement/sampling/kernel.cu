@@ -8,13 +8,16 @@ __global__ void access_memory(ulong* memory, ulong* offset, int count){
     int global_id = threadIdx.x + blockDim.x * blockIdx.x;
     ulong *p = memory;
     p += offset[global_id];
+    // printf("global_id %d %lu %lu\n", global_id, (ulong)memory, *p);
 
     ulong q;
     for(int i=0; i<count; i++){
+        //printf("global_id pre %d it %d ptr %lu \n", global_id, i, p);
         q = (ulong)memory + *p;
         p = (ulong*)q; 
+        //printf("global_id post %d it %d ptr %lu \n", global_id, i, p);
     }
-    *p = 1;
+    if(global_id == -1) *p = 1;
 }
 
 __global__ void access_memory_std(ulong* memory, ulong* offset, int count, unsigned long long int* d_time, double* avg_arr, double* std_arr){
@@ -71,28 +74,31 @@ int main(int argc, char **argv){
     int len, size;
     unsigned int count;
     size_t grid_size, workgroup_size;
-    bool use_std = true;
+    bool use_std = false;
 
-    if (argc != 5) {
-        printf("./kernel memory_size num_wg count\n");
-        exit(-1);
-    }
+    // if (argc != 5) {
+    //     printf("./kernel memory_size num_wg count\n");
+    //     exit(-1);
+    // }
 
     size = atoi(argv[1]);
-    count = atoi(argv[3]);
     int num_wg = atoi(argv[2]);
+    count = atoi(argv[3]);
     int gpuID = atoi(argv[4]);
-    int num_wi_per_wg = 32;
+    int num_wi_per_wg = atoi(argv[5]);
+    //int num_wi_per_wg = 1;
 
     grid_size = num_wg * num_wi_per_wg;
     workgroup_size = num_wi_per_wg;
 
     len = size / sizeof(void *);
-    int M = pow(2, 30);
-
+    int M = len; //
+    M = pow(2, 30);
+    // printf("len %d M %d\n", len, M);
     /* Host*/
     uint64_t *memory = new uint64_t[M * sizeof(uint64_t)]; //malloc(M * sizeof(uint64_t));
     uint64_t *indices = new uint64_t[M * sizeof(uint64_t)]; //malloc(M * sizeof(uint64_t));
+    uint64_t *offset = new uint64_t[grid_size * sizeof(uint64_t)]; //malloc(M * sizeof(uint64_t));
     for (int i = 0; i < len; i++) {
         indices[i] = i;
     }
@@ -107,28 +113,33 @@ int main(int argc, char **argv){
         memory[indices[i - 1]] = indices[i] * 8;
     }
     memory[indices[len - 1]] = indices[0] * 8;
+    
+    for(int i = 0; i < grid_size; i++){
+        offset[i] = i;
+    }
 
     /* Data copy */
     uint64_t *d_memory;
     uint64_t *d_offset;
+    // printf("Create buffer with size %d \n", M);
     cudaMalloc ((void **) &d_memory, sizeof(uint64_t) * M);
     cudaMemcpy((void *)d_memory, memory, sizeof(uint64_t) * M, cudaMemcpyHostToDevice);
     uint64_t zero = 0;
     cudaMalloc ((void **) &d_offset, sizeof(uint64_t) * grid_size);
-    cudaMemset((void *)d_offset, zero, sizeof(uint64_t) * grid_size);
+    cudaMemcpy((void *)d_offset, offset, sizeof(uint64_t) * grid_size, cudaMemcpyHostToDevice);
 
     /* Execute */
     if(use_std){
         unsigned long long int *d_time;
         double  *d_avg_arr;
         double *d_std_arr;
-        cudaMalloc ((void **) &d_time, sizeof(unsigned long long int) * count * num_wi_per_wg);
-        cudaMemset((void *)d_time, (unsigned long long int)1, sizeof(unsigned long long int) * count * num_wi_per_wg);
+        cudaMalloc ((void **) &d_time, sizeof(unsigned long long int) * count * grid_size);
+        cudaMemset((void *)d_time, (unsigned long long int)1, sizeof(unsigned long long int) * count * grid_size);
         //printf("d_time %llu\n", d_time);
-        cudaMalloc ((void **) &d_avg_arr, sizeof(double) * num_wi_per_wg);
-        cudaMemset((void *)d_avg_arr, 0.0, sizeof(double) * num_wi_per_wg);
-        cudaMalloc ((void **) &d_std_arr, sizeof(double) * num_wi_per_wg);
-        cudaMemset((void *)d_std_arr, 0.0, sizeof(double) * num_wi_per_wg);
+        cudaMalloc ((void **) &d_avg_arr, sizeof(double) * grid_size);
+        cudaMemset((void *)d_avg_arr, 0.0, sizeof(double) * grid_size);
+        cudaMalloc ((void **) &d_std_arr, sizeof(double) * grid_size);
+        cudaMemset((void *)d_std_arr, 0.0, sizeof(double) * grid_size);
         //printf("d_time %llu d_avg_arr %llu d_memory %llu\n", d_time, d_avg_arr, d_memory);
         
         start = getTimeInNSecs();
@@ -142,17 +153,17 @@ int main(int argc, char **argv){
         }
 
         end = getTimeInNSecs();
-        double *h_avg_arr = new double[num_wi_per_wg]; 
-        double *h_std_arr = new double[num_wi_per_wg]; 
-        cudaMemcpy((void *)h_avg_arr, d_avg_arr, sizeof(double) * num_wi_per_wg, cudaMemcpyDeviceToHost);
-        cudaMemcpy((void *)h_std_arr, d_std_arr, sizeof(double) * num_wi_per_wg, cudaMemcpyDeviceToHost);
+        double *h_avg_arr = new double[grid_size]; 
+        double *h_std_arr = new double[grid_size]; 
+        cudaMemcpy((void *)h_avg_arr, d_avg_arr, sizeof(double) * grid_size, cudaMemcpyDeviceToHost);
+        cudaMemcpy((void *)h_std_arr, d_std_arr, sizeof(double) * grid_size, cudaMemcpyDeviceToHost);
         double sum_mean = 0.0;
         double sum_std = 0.0;
-        for(int i = 0; i < num_wi_per_wg; i++){
+        for(int i = 0; i < grid_size; i++){
             sum_mean += h_avg_arr[i];
             sum_std += h_std_arr[i];
         }
-        printf("GPU Runtime: %.10f %.10f %i\n", (double)sum_mean / num_wi_per_wg, (double) sum_std / num_wi_per_wg, size);
+        printf("GPU Runtime: %.10f %.10f %i\n", (double)sum_mean / grid_size, (double) sum_std / grid_size, size);
         cudaFree(d_time);
         cudaFree(d_avg_arr);
         cudaFree(d_std_arr);
@@ -180,6 +191,7 @@ int main(int argc, char **argv){
     cudaFree(d_offset);
     delete[] memory;
     delete[] indices;
+    delete[] offset;
     
     return 0;
 }
