@@ -30,7 +30,7 @@ __global__ void access_memory(ulong* memory, ulong* offset, int count){
         q = (ulong)memory + *p;
         p = (ulong*)q; 
     }
-    *p = 1;
+    if(global_id == -1) *p = 1;
 }
 
 __global__ void access_memory_std(ulong* memory, ulong* offset, int count, unsigned long long int* d_time, double* avg_arr, double* std_arr){
@@ -89,17 +89,17 @@ int main(int argc, char **argv){
     size_t grid_size, workgroup_size;
     bool use_std = false;
 
-    if (argc != 6) {
-        printf("./kernel-p2p memory_size num_wg count\n");
-        exit(-1);
-    }
+    // if (argc != 6) {
+    //     printf("./kernel-p2p memory_size num_wg count\n");
+    //     exit(-1);
+    // }
 
     size = atoi(argv[1]);
     count = atoi(argv[3]);
     int num_wg = atoi(argv[2]);
     int gpuID = atoi(argv[4]);
     int peerGpuID = atoi(argv[5]);
-    int num_wi_per_wg = 32;
+    int num_wi_per_wg = atoi(argv[5]);
 
     grid_size = num_wg * num_wi_per_wg;
     workgroup_size = num_wi_per_wg;
@@ -123,6 +123,7 @@ int main(int argc, char **argv){
     /* Host*/
     uint64_t *memory = new uint64_t[M * sizeof(uint64_t)]; //malloc(M * sizeof(uint64_t));
     uint64_t *indices = new uint64_t[M * sizeof(uint64_t)]; //malloc(M * sizeof(uint64_t));
+    uint64_t *offset = new uint64_t[grid_size * sizeof(uint64_t)]; //malloc(M * sizeof(uint64_t));
     for (int i = 0; i < len; i++) {
         indices[i] = i;
     }
@@ -138,6 +139,10 @@ int main(int argc, char **argv){
     }
     memory[indices[len - 1]] = indices[0] * 8;
 
+    for(int i = 0; i < grid_size; i++){
+        offset[i] = i;
+    }
+
     /* Data copy */
     checkCudaErrors(cudaSetDevice(p2pCapableGPUs[1]));
     uint64_t *d_memory;
@@ -148,7 +153,8 @@ int main(int argc, char **argv){
     uint64_t *d_offset;
     checkCudaErrors(cudaMalloc ((void **) &d_offset, sizeof(uint64_t) * grid_size));
     uint64_t zero = 0;
-    checkCudaErrors(cudaMemset((void *)d_offset, zero, sizeof(uint64_t) * grid_size));
+    // checkCudaErrors(cudaMemset((void *)d_offset, zero, sizeof(uint64_t) * grid_size));
+    checkCudaErrors(cudaMemcpy((void *)d_offset, offset, sizeof(uint64_t) * grid_size, cudaMemcpyHostToDevice));
 
 
     /* Execute */
@@ -211,6 +217,7 @@ int main(int argc, char **argv){
     cudaFree(d_offset);
     delete[] memory;
     delete[] indices;
+    delete[] offset;
     checkCudaErrors(cudaSetDevice(p2pCapableGPUs[0]));
     checkCudaErrors(cudaDeviceDisablePeerAccess(p2pCapableGPUs[1]));
     checkCudaErrors(cudaSetDevice(p2pCapableGPUs[1]));
